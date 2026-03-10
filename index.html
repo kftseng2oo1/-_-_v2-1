@@ -524,6 +524,36 @@
             color: var(--text-secondary);
         }
         
+        /* 備註區 */
+        .history-note-area { margin-top: 8px; }
+        .history-note-label {
+            font-size: 11px; color: var(--gold);
+            margin-bottom: 4px;
+            display: flex; align-items: center; gap: 4px; opacity: 0.85;
+        }
+        .history-note-input {
+            width: 100%;
+            background: rgba(212,175,55,0.05);
+            border: 1px solid rgba(212,175,55,0.2);
+            border-radius: 6px; color: #ccc;
+            font-size: 12px; padding: 7px 10px;
+            resize: none; font-family: inherit;
+            line-height: 1.5; min-height: 52px;
+            transition: border-color 0.25s, background 0.25s;
+        }
+        .history-note-input:focus {
+            outline: none;
+            border-color: rgba(212,175,55,0.5);
+            background: rgba(212,175,55,0.09);
+        }
+        .history-note-input::placeholder { color: #4a4a4a; }
+        .history-note-saved {
+            font-size: 11px; color: #2ecc71;
+            margin-top: 3px; height: 14px;
+            opacity: 0; transition: opacity 0.3s;
+        }
+        .history-note-saved.show { opacity: 1; }
+        
         /* Modal */
         .modal {
             display: none;
@@ -667,7 +697,7 @@
         <div class="header">
             <div class="title">數位易經</div>
             <div class="subtitle">三數通天機 · 誠意正心</div>
-            <div class="version-badge">優化版 v2.1</div>
+            <div class="version-badge">優化版 v2.2</div>
         </div>
         
         <!-- 選擇類別 -->
@@ -8096,21 +8126,41 @@
             }
         }
         
-        function saveToHistory(category, hexagram, yaoCi, numbers) {
+        function saveToHistory(category, hexagram, yaoCi, numbers, movingLine) {
             const history = JSON.parse(localStorage.getItem('divinationHistory') || '[]');
             const categoryNameMap = {
                 'career': '事業', 'health': '健康', 'love': '愛情', 'wealth': '財運',
                 'investment': '投資', 'marriage': '婚姻', 'lawsuit': '官司', 'property': '購屋'
             };
             
+            const levelJudgment = {
+                'L1': '元吉', 'L2': '吉', 'L3': '吉', 'L4': '平',
+                'L5': '悔', 'L6': '吝', 'L7': '厲', 'L8': '凶', 'L9': '大凶'
+            }[yaoCi.level] || '平';
+            
+            const levelScore = {
+                'L1': 100, 'L2': 90, 'L3': 80, 'L4': 70,
+                'L5': 60, 'L6': 50, 'L7': 40, 'L8': 30, 'L9': 20
+            }[yaoCi.level] || 70;
+            
+            const interpretation = yaoCi.interpretation[category] || '暫無針對此事項的詳細解讀。';
+            
             history.unshift({
                 timestamp: new Date().toISOString(),
                 category: category,
                 categoryName: categoryNameMap[category],
                 hexagramName: hexagram.name,
+                hexagramId: hexagram.id,
                 yaoName: yaoCi.name,
+                yaoText: yaoCi.text,
                 level: yaoCi.level,
-                numbers: numbers
+                levelJudgment: levelJudgment,
+                levelScore: levelScore,
+                interpretation: interpretation,
+                keywords: yaoCi.keywords || [],
+                movingLine: movingLine,
+                numbers: numbers,
+                note: ''
             });
             
             // 只保留最近10筆
@@ -8130,11 +8180,16 @@
                 return;
             }
             
-            historyList.innerHTML = history.map(item => {
+            historyList.innerHTML = history.map((item, index) => {
                 const time = new Date(item.timestamp);
                 const timeStr = `${time.getMonth() + 1}/${time.getDate()} ${time.getHours()}:${String(time.getMinutes()).padStart(2, '0')}`;
                 const levelColor = ['L1', 'L2', 'L3'].includes(item.level) ? '#2ecc71' : 
                                   (['L7', 'L8', 'L9'].includes(item.level) ? '#e74c3c' : '#95a5a6');
+                const numbersStr = item.numbers ? item.numbers.join(' · ') : '';
+                const movingLineStr = item.movingLine ? `第${item.movingLine}爻動` : '';
+                const keywordsHtml = (item.keywords && item.keywords.length) 
+                    ? item.keywords.map(k => `<span style="display:inline-block;background:rgba(184,134,11,0.15);color:#c8a951;border:1px solid rgba(200,169,81,0.3);border-radius:12px;padding:2px 8px;font-size:11px;margin:2px 3px 2px 0;">${k}</span>`).join('') 
+                    : '';
                 
                 return `
                     <div class="history-item">
@@ -8142,8 +8197,30 @@
                             <span class="history-item-category">${item.categoryName}</span>
                             <span class="history-item-time">${timeStr}</span>
                         </div>
-                        <div class="history-item-result" style="color: ${levelColor};">
-                            ${item.hexagramName} · ${item.yaoName}
+                        ${numbersStr ? `<div style="font-size: 12px; color: #888; margin: 4px 0;">輸入數字：${numbersStr}</div>` : ''}
+                        <div class="history-item-result" style="color: ${levelColor}; margin: 6px 0;">
+                            ${item.hexagramName} · ${item.yaoName}${movingLineStr ? ' · ' + movingLineStr : ''}
+                        </div>
+                        ${item.yaoText ? `<div style="font-size: 12px; color: #aaa; margin: 4px 0; font-style: italic;">「${item.yaoText}」</div>` : ''}
+                        ${keywordsHtml ? `<div style="margin: 6px 0;">${keywordsHtml}</div>` : ''}
+                        ${(item.levelJudgment || item.levelScore) ? `
+                        <div style="display:flex; gap:10px; margin: 6px 0; font-size:12px;">
+                            ${item.levelJudgment ? `<span style="color:${levelColor};">運勢：${item.levelJudgment}</span>` : ''}
+                            ${item.levelScore ? `<span style="color:#888;">得分：${item.levelScore} 分</span>` : ''}
+                        </div>` : ''}
+                        ${item.interpretation ? `
+                        <div style="margin-top:8px; padding:10px 12px; background:rgba(255,255,255,0.04); border-left:3px solid rgba(200,169,81,0.4); border-radius:0 8px 8px 0; font-size:12px; color:#aaa; line-height:1.6;">
+                            <div style="color:#c8a951; font-size:11px; margin-bottom:4px;">💡 詳細指引</div>
+                            ${item.interpretation}
+                        </div>` : ''}
+                        <div class="history-note-area" onclick="event.stopPropagation()">
+                            <div class="history-note-label">📝 備註</div>
+                            <textarea class="history-note-input"
+                                placeholder="記錄占卜詳細事項、背景或後續驗證…"
+                                rows="2"
+                                onblur="saveHistoryNote(${index}, this.value)"
+                            >${item.note || ''}</textarea>
+                            <div class="history-note-saved" id="noteSaved_${index}">✓ 已儲存</div>
                         </div>
                     </div>
                 `;
@@ -8279,7 +8356,7 @@
             
             if (yaoCi) {
                 displayResult(hexagramData, yaoCi, selectedCategory);
-                saveToHistory(selectedCategory, hexagramData, yaoCi, [d1, d2, d3]);
+                saveToHistory(selectedCategory, hexagramData, yaoCi, [d1, d2, d3], movingLine);
                 vibrate([100, 50, 100]);
             } else {
                 alert(`資料庫中找不到第 ${hexagramData.id} 卦第 ${movingLine} 爻的資料。\n請確認資料庫是否已完整載入。`);
@@ -8413,6 +8490,19 @@
             document.getElementById('helpModal').style.display = 'none';
         }
         
+        function saveHistoryNote(index, value) {
+            const history = JSON.parse(localStorage.getItem('divinationHistory') || '[]');
+            if (history[index] !== undefined) {
+                history[index].note = value;
+                localStorage.setItem('divinationHistory', JSON.stringify(history));
+                const indicator = document.getElementById('noteSaved_' + index);
+                if (indicator) {
+                    indicator.classList.add('show');
+                    setTimeout(() => indicator.classList.remove('show'), 1800);
+                }
+            }
+        }
+        
         function toggleHistory() {
             vibrate([30]);
             const historySection = document.getElementById('historySection');
@@ -8458,15 +8548,15 @@
         // ========== PWA 功能 ==========
         // 註冊 Service Worker
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
-                    .then(registration => {
-                        console.log('Service Worker 註冊成功:', registration.scope);
-                    })
-                    .catch(error => {
-                        console.log('Service Worker 註冊失敗:', error);
-                    });
-            });
+            const _swOK = !location.hostname.includes('claudeusercontent.com') &&
+                          !location.hostname.includes('claude.ai');
+            if (_swOK) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('sw.js')
+                        .then(r => console.log('Service Worker 註冊成功:', r.scope))
+                        .catch(e => console.log('Service Worker 註冊失敗:', e));
+                });
+            }
         }
         
         // PWA 安裝提示
