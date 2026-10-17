@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>數位易經 - 三數起卦（優化版）</title>
     
     <!-- PWA Meta Tags -->
@@ -686,20 +686,24 @@
         .card-row { display:flex; justify-content:center; gap:14px; margin:20px 0 6px; perspective:800px; }
         .card-slot { text-align:center; }
         .card-label { font-size:13px; color:var(--gold); margin-top:8px; letter-spacing:2px; }
-        .poker-card { width:76px; height:108px; position:relative; transform-style:preserve-3d; -webkit-transform-style:preserve-3d; transition:transform 0.6s; }
+        .poker-card { width:88px; height:124px; position:relative; transform-style:preserve-3d; -webkit-transform-style:preserve-3d; transition:transform 0.6s; }
         .poker-card.flipped { transform:rotateY(180deg); -webkit-transform:rotateY(180deg); }
-        .card-face { position:absolute; top:0; left:0; width:100%; height:100%; border-radius:9px; backface-visibility:hidden; -webkit-backface-visibility:hidden; box-shadow:0 4px 12px rgba(0,0,0,0.5); }
-        .card-back { background:repeating-linear-gradient(45deg, #7a2a20 0 6px, #8f3428 6px 12px); border:3px solid var(--gold); display:flex; align-items:center; justify-content:center; color:var(--gold); font-size:30px; }
+        .card-face { position:absolute; top:0; left:0; width:100%; height:100%; border-radius:10px; backface-visibility:hidden; -webkit-backface-visibility:hidden; box-shadow:0 4px 12px rgba(0,0,0,0.5); }
+        .card-back { background:repeating-linear-gradient(45deg, #7a2a20 0 6px, #8f3428 6px 12px); border:3px solid var(--gold); display:flex; align-items:center; justify-content:center; color:var(--gold); font-size:34px; }
         .card-front { background:#fbf8ef; border:1px solid #ccc; transform:rotateY(180deg); -webkit-transform:rotateY(180deg); color:#1a1a1a; }
         .card-front.red { color:#c0392b; }
-        .card-corner { position:absolute; top:5px; left:7px; font-size:16px; font-weight:bold; line-height:1.05; text-align:center; }
-        .card-corner.br { top:auto; left:auto; bottom:5px; right:7px; transform:rotate(180deg); }
-        .card-center { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:36px; }
+        .card-corner { position:absolute; top:6px; left:7px; width:18px; text-align:center; font-family:Georgia, 'Times New Roman', serif; font-size:19px; font-weight:bold; line-height:1; }
+        .card-corner.ten { letter-spacing:-2px; font-size:17px; width:20px; left:5px; }
+        .card-corner svg { display:block; width:13px; height:13px; margin:3px auto 0; }
+        .card-corner.br { top:auto; left:auto; bottom:6px; right:7px; transform:rotate(180deg); }
+        .card-corner.ten.br { right:5px; }
+        .card-center { position:absolute; top:50%; left:50%; width:44px; height:44px; margin:-22px 0 0 -22px; }
+        .card-center svg { width:100%; height:100%; display:block; }
         .card-digit { font-size:22px; font-weight:bold; color:var(--gold); margin-top:4px; min-height:26px; }
         .draw-btn { display:block; width:100%; margin:14px 0 4px; padding:14px; font-size:17px; letter-spacing:4px; font-weight:bold; border:1px solid var(--gold); border-radius:12px; background:rgba(212,175,55,0.12); color:var(--gold); cursor:pointer; font-family:inherit; }
         .draw-btn:disabled { opacity:0.5; }
         .card-note { font-size:12px; color:#999; text-align:center; line-height:1.6; }
-        @media (max-width: 480px) { .poker-card { width:68px; height:97px; } .card-center { font-size:30px; } .card-row { gap:10px; } }
+        @media (max-width: 360px) { .poker-card { width:76px; height:108px; } .card-center { width:36px; height:36px; margin:-18px 0 0 -18px; } .card-row { gap:10px; } }
     </style>
 </head>
 <body>
@@ -8268,7 +8272,14 @@
         // ========== 撲克抽牌 ==========
         var inputMode = 'manual';
         var isDrawing = false;
-        var CARD_SUITS = [{s:'♠',red:false},{s:'♥',red:true},{s:'♦',red:true},{s:'♣',red:false}];
+        var SUIT_SVG = {
+            spade: '<path d="M12 2C9 6.2 3 9.6 3 14a4.5 4.5 0 0 0 7.7 3.2C10.4 19.5 9.6 21 8 22h8c-1.6-1-2.4-2.5-2.7-4.8A4.5 4.5 0 0 0 21 14c0-4.4-6-7.8-9-12z"/>',
+            heart: '<path d="M12 21.4l-1.5-1.3C5.4 15.4 2 12.3 2 8.5 2 5.4 4.4 3 7.5 3c1.7 0 3.4.8 4.5 2.1C13.1 3.8 14.8 3 16.5 3 19.6 3 22 5.4 22 8.5c0 3.8-3.4 6.9-8.5 11.6L12 21.4z"/>',
+            diamond: '<path d="M12 1.5L20.5 12 12 22.5 3.5 12z"/>',
+            club: '<circle cx="12" cy="7" r="4.4"/><circle cx="6.8" cy="13.6" r="4.4"/><circle cx="17.2" cy="13.6" r="4.4"/><path d="M11 12.5c0 4-1 7.5-3 9.5h8c-2-2-3-5.5-3-9.5z"/>'
+        };
+        var CARD_SUITS = [{s:'spade',red:false},{s:'heart',red:true},{s:'diamond',red:true},{s:'club',red:false}];
+        function suitSvg(name) { return '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' + SUIT_SVG[name] + '</svg>'; }
         var CARD_RANKS = ['','A','2','3','4','5','6','7','8','9','10'];
         
         // 公平亂數：回傳 0..n-1，crypto 亂數 + 拒絕取樣，無取餘偏差
@@ -8293,9 +8304,11 @@
             var front = el.querySelector('.card-front');
             var r = CARD_RANKS[card.rank];
             front.className = 'card-face card-front' + (card.suit.red ? ' red' : '');
-            front.innerHTML = '<div class="card-corner">' + r + '<br>' + card.suit.s + '</div>' +
-                '<div class="card-center">' + card.suit.s + '</div>' +
-                '<div class="card-corner br">' + r + '<br>' + card.suit.s + '</div>';
+            var sv = suitSvg(card.suit.s);
+            var ten = r === '10' ? ' ten' : '';
+            front.innerHTML = '<div class="card-corner' + ten + '">' + r + sv + '</div>' +
+                '<div class="card-center">' + sv + '</div>' +
+                '<div class="card-corner br' + ten + '">' + r + sv + '</div>';
         }
         
         function resetCards() {
