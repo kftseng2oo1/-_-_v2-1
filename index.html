@@ -700,6 +700,8 @@
         .card-corner.ten.br { right:5px; }
         .card-center { position:absolute; top:50%; left:50%; width:44px; height:44px; margin:-22px 0 0 -22px; }
         .card-center svg { width:100%; height:100%; display:block; }
+        .pip { position:absolute; width:15px; height:15px; margin:-7.5px 0 0 -7.5px; }
+        .pip svg { width:100%; height:100%; display:block; }
         .card-digit { font-size:22px; font-weight:bold; color:var(--gold); margin-top:4px; min-height:26px; }
         .draw-btn { display:block; width:100%; margin:14px 0 4px; padding:14px; font-size:17px; letter-spacing:4px; font-weight:bold; border:1px solid var(--gold); border-radius:12px; background:rgba(212,175,55,0.12); color:var(--gold); cursor:pointer; font-family:inherit; }
         .draw-btn:disabled { opacity:0.5; }
@@ -8280,6 +8282,19 @@
             club: '<circle cx="12" cy="7" r="4.4"/><circle cx="6.8" cy="13.6" r="4.4"/><circle cx="17.2" cy="13.6" r="4.4"/><path d="M11 12.5c0 4-1 7.5-3 9.5h8c-2-2-3-5.5-3-9.5z"/>'
         };
         var CARD_SUITS = [{s:'spade',red:false},{s:'heart',red:true},{s:'diamond',red:true},{s:'club',red:false}];
+        // 點數幾就畫幾個花色（x%, y%）
+        var L = 37, M = 50, R = 63;
+        var PIP_LAYOUT = {
+            2: [[M,22],[M,78]],
+            3: [[M,22],[M,50],[M,78]],
+            4: [[L,22],[R,22],[L,78],[R,78]],
+            5: [[L,22],[R,22],[M,50],[L,78],[R,78]],
+            6: [[L,22],[R,22],[L,50],[R,50],[L,78],[R,78]],
+            7: [[L,22],[R,22],[M,36],[L,50],[R,50],[L,78],[R,78]],
+            8: [[L,22],[R,22],[M,36],[L,50],[R,50],[M,64],[L,78],[R,78]],
+            9: [[L,20],[R,20],[L,40],[R,40],[M,50],[L,60],[R,60],[L,80],[R,80]],
+            10: [[L,20],[R,20],[M,30],[L,40],[R,40],[L,60],[R,60],[M,70],[L,80],[R,80]]
+        };
         function suitSvg(name) { return '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' + SUIT_SVG[name] + '</svg>'; }
         var CARD_RANKS = ['','A','2','3','4','5','6','7','8','9','10'];
         
@@ -8307,8 +8322,16 @@
             front.className = 'card-face card-front' + (card.suit.red ? ' red' : '');
             var sv = suitSvg(card.suit.s);
             var ten = r === '10' ? ' ten' : '';
-            front.innerHTML = '<div class="card-corner' + ten + '">' + r + sv + '</div>' +
-                '<div class="card-center">' + sv + '</div>' +
+            var body = '';
+            if (card.rank === 1) {
+                body = '<div class="card-center">' + sv + '</div>';
+            } else {
+                var pos = PIP_LAYOUT[card.rank];
+                for (var k = 0; k < pos.length; k++) {
+                    body += '<div class="pip" style="left:' + pos[k][0] + '%;top:' + pos[k][1] + '%">' + sv + '</div>';
+                }
+            }
+            front.innerHTML = '<div class="card-corner' + ten + '">' + r + sv + '</div>' + body +
                 '<div class="card-corner br' + ten + '">' + sv + r + '</div>';
         }
         
