@@ -8547,7 +8547,8 @@
             let lowerValue = (d2 + d3) % 8 || 8;
             let movingLine = (d1 + d2 + d3) % 6 || 6;
             
-            const hexagramKey = `${upperValue}-${lowerValue}`;
+            // HEXAGRAM_MAP 的鍵值是「下卦-上卦」（例如 1-2 = 澤天夬：下乾上兌），所以先放下卦
+            const hexagramKey = `${lowerValue}-${upperValue}`;
             const hexagramData = HEXAGRAM_MAP[hexagramKey];
             
             if (!hexagramData) {
